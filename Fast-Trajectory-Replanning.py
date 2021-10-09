@@ -1,3 +1,4 @@
+
 from matplotlib import animation
 import numpy as np
 from numpy.lib.type_check import asfarray
@@ -10,38 +11,41 @@ import matplotlib.patches as mpatches
 from matplotlib.animation import FuncAnimation
 import math
 import heapq as heap
-ROW=101
-COL=101 
+import node as n
+
+# print('index : {idx} | g {g} | h {h} | f {f}'.format(idx = x.index, g = x.gval, h = x.hval, f = x.gval + x.hval))
+ROW = 101
+COL = 101
 BLOCKED = -1
 OPEN = 0
-class node:
-    def __init__(self,index,hval=None,gval=None,fval=None,nextnode=None) -> None:
-        self.index= index
-        self.hval = hval
-        self.gval = gval
-        self.fval = fval
-        self.nextnode = nextnode
-    def compute_f(self):
-        self.fval= self.gval+self.hval
-    def compute_h(self,goal_idx):
-        self.hval = abs(goal_idx[0]-self.index[0]) + abs(goal_idx.index[1]-self.index[1])
-visited = np.zeros((ROW,COL),dtype=bool)        #boolean array of visited or not
-neighbors = [(0,-1), (1,0), (0,1), (-1,0)]      #neighbors to visit during DFS
-def is_valid(row,col):                          #DFS Helper method 
+
+
+
+visited = np.zeros((ROW, COL), dtype=bool)  # boolean array of visited or not
+neighbors = [(0, -1), (1, 0), (0, 1), (-1, 0)]  # neighbors to visit during DFS
+
+
+def is_valid(row, col):  # DFS Helper method
     global ROW
     global COL
     global visited
-    #if cell is out of bounds
-    if (row < 0 or col < 0 or row>= ROW or col >= COL):
+    # if cell is out of bounds
+    if (row < 0 or col < 0 or row >= ROW or col >= COL):
         return False
     if visited[row][col]:
         return False
     return True
-def DFS(row,col,grid):                          #DFS on grid to mark blocked/unblocked cells
+
+
+
+
+
+
+def DFS(row, col, grid):  # DFS on grid to mark blocked/unblocked cells
     global visited
     global neighbors
     stack_pairs = []
-    stack_pairs.append([row,col])
+    stack_pairs.append([row, col])
 
     while len(stack_pairs) > 0:
         current = stack_pairs[-1]
@@ -49,75 +53,240 @@ def DFS(row,col,grid):                          #DFS on grid to mark blocked/unb
         row = current[0]
         col = current[1]
 
-        if (is_valid(row,col) == False):
+        if (is_valid(row, col) == False):
             continue
 
         visited[row][col] = True
 
-        #do the random make the cell blocked or unblocked here
+        # do the random make the cell blocked or unblocked here
         grid[row][col] = 0 if rand.random() < 0.7 else -1
 
-        #push all adjacent cells randomly
+        # push all adjacent cells randomly
         neighbors = np.random.permutation(neighbors)
         for i in range(4):
             adj_hor = row + neighbors[i][0]
             adj_vert = col + neighbors[i][1]
-            stack_pairs.append([adj_hor,adj_vert])
-    return grid
-def set_grid (grid):
-    rand_row=rand.randint(0,100)
-    rand_col=rand.randint(0,100)
-    grid=DFS(rand_row,rand_col,grid)
+            stack_pairs.append([adj_hor, adj_vert])
     return grid
 
-def compute_path(grid, start_node, goal_node):
-    closedlist=set()
-    path=[]
-    openlist=[]
-    heap.push(openlist, start_node)
-    #FINISH LATER
-
-#MAIN
-grid1 = np.array([[0,-1,0,0,0],
-        [0,-1,-1,0,0],
-        [0,0,0,0,0],
-        [0,-1,0,0,0],
-        [0,-1,0,0,0]])
-counter=0
-state_grid = np.zeros((5,5),dtype=np.int64)
-start_idx = node((0,0))
-goal = node((4,4))
-while start_idx!=goal:
-    counter +=1
-    start_idx.gval = 0
-    state_grid[start_idx.index[0]][start_idx.index[1]]= counter
-    goal.gval=math.inf
-    state_grid[goal.index[0]][goal.index[1]] = counter
-    openlist =[]
-    ### MUST COMPUTE THINGS HERE
-    heap.heappush(openlist,start_idx)
 
 
+def set_grid(grid):
+    rand_row = rand.randint(0, 100)
+    rand_col = rand.randint(0, 100)
+    grid = DFS(rand_row, rand_col, grid)
+    return grid
+
+
+def print_node_list(list):
+    for n in list:
+        print_node(n)
+
+def get_path(start, goal):
+    path = []
+    curr = goal
+
+
+    while curr is not None:
+        path.insert(0, curr.index)
+        curr = curr.parent
+
+    print('Assume path:')
+    for p in path:
+        print('({x},{y})'.format(x=p[0], y=p[1]))
+
+    return path
+
+def print_state(state, counter,comment = ""):
+    print("%s\n"%comment)
+    print("Search : %d\n"%counter)
+    for i in range(6):
+        for j in range(6):
+            if j < 5:
+                print(" %2d"%state[i][j], end="")
+            else:
+                print(" %2d"%state[i][j])
+
+def observe(curr, grid, maze):
+    for move in neighbors:
+        row = curr[0] + move[0]
+        col = curr[1] + move[1]
+        if row < 0 or col < 0 or row >= len(grid) or col >= len(grid[row]):
+            continue
+        else:
+            grid[row][col] = -1 if maze[row][col] == -1 else 0
+
+def move_to(start, goal, path, state, maze):
+    row = start[0] + path[0][0]
+    col = start[1] + path[1][1]
+
+    path.pop()
+    curr = start
+    for move in path:
+        row = curr[0] + move[0]
+        col = curr[1] + move[1]
+        if state[row][col] == -1:
+            return (curr[0],curr[1])
+        else:
+            curr = (row, col)
+            observe(curr, state, maze)
+    return curr
+
+
+
+def get_next(pos, grid, goal_idx, counter):
+    next_list = []
+    for move in neighbors:
+        row = pos[0] + move[0]
+        col = pos[1] + move[1]
+        if row < 0 or col < 0 or row >= len(grid) or col >= len(grid[row])\
+          or grid[row][col] == -1 :
+            continue
+
+        if grid[row][col] == counter + 1:
+            continue;
+        next_list.append(n.node((row, col), goal_idx, gval=math.inf))
+
+
+    return next_list
+
+
+
+
+def print_node(node):
+    print('index : {idx} | g {g} | h {h} | f {f}'.format(idx = node.index, g = node.gval, h = node.hval, f = node.gval + node.hval))
+
+def compute_path(known_grid, start_node, goal_node, openlist, counter):
+    # print_node(openlist[0])
+    # print(len(openlist))
+    
+    goal = goal_node
+
+    while len(openlist) > 0 and goal.gval > openlist[0].get_f():
+        curr = heap.heappop(openlist)
+
+        if curr.index == goal_node.index:
+            goal = next_node
+            print('Goal node update',end="")
+            print_node(goal)
+            goal.parent = curr
+            # print_state(known_grid,0)
+            
+        # print('min curr',end="")
+        # print_node(curr)
+        # print('open list size {}'.format(len(openlist)))
+        actions = get_next(curr.index, known_grid, goal_node.index, counter)
+        # print('valid action {}'.format(len(actions)))
+        
+
+        for next_node in actions:
+            row = next_node.index[0]
+            col = next_node.index[1]
+            print_node(next_node)
+            
+            if known_grid[row][col] < counter:
+                next_node.gval = math.inf
+                known_grid[row][col] = counter
+
+            
+            if (next_node.gval) > (curr.gval + 1):
+                next_node.gval = curr.gval + 1
+                next_node.parent = curr
+
+                if next_node in openlist:
+                    print('remove',end="")
+                    print_node(next_node)
+                    openlist.remove(next_node)
+                # print("push  ",end = "")
+                # print_node(next_node)
+                heap.heappush(openlist, next_node)
+                # print("top    ",end = "")
+                # print_node(openlist[0])
+
+    if len(openlist) == 0:
+        return None
+    # print("top    ",end = "")
+    # print_node(openlist[0])
+    # goal.parent = curr
+    # print_node(goal)
+    return get_path(start_node, curr)
+
+    # get_path()
+        
+        # print(len(openlist))
+    print('currnode',end="")
+    print_node(curr)
+    print('opentopnode',end="")
+    print_node(openlist[0])
+
+    
+
+
+    
+
+
+                
+    
+
+    # for node in openlist:
+    #     print(node.index)
+    # FINISH LATER
 
 
 
 
 
+# MAIN
+maze = np.array([[0, 0, 0, 0, 0, 0],
+                 [0, -1, -1, -1, 0, 0],
+                 [0, 0, -1, 0, -1, 0],
+                 [-1, 0, 0, 0, -1, 0],
+                 [-1, -1, 0, -1, -1, 0],
+                 [0, 0, 0, -1, 0, 0]])
+counter = 0
+state_grid = np.zeros((6, 6), dtype=np.int64)
+print_state(maze, 0, "Maze : ")
+start = (1, 0)
+print("observe")
+observe(start, state_grid, maze)
+
+print_state(state_grid, counter)
+goal_idx = (5, 4)
+goal = n.node((5, 4), goal_idx, gval=math.inf)
+curr = n.node(start, goal_idx, gval=0)
+# while curr.index != goal.index:
+#     print_state(state_grid, counter)
+#     counter += 1
+#     curr.gval = 0
+#     state_grid[curr.index[0]][curr.index[1]] = counter
+#     goal.gval = math.inf
+#     state_grid[goal_idx[0]][goal_idx[1]] = counter
+#     openlist = []
+#     # MUST COMPUTE THINGS HERE
+#     heap.heappush(openlist, curr)
+#     # compute_path(state_grid, curr, goal, openlist, counter)
+#     if len(openlist) == 0:
+#         print("I cannot reach the target")
+#         break
+#     path = get_path(curr, goal)
+#     curr.index = move_to(curr.index, goal.index, path, state_grid, maze)
+
+
+
+openlist = []
+heap.heappush(openlist, curr)
+path = compute_path(maze, curr, goal, openlist, 1)
+if path is not None:
+    curr.index = move_to(curr.index, goal.index, path, state_grid, maze)
+print(curr.index)
+# print_node(curr)
+# print_node(goal)
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-#Visualizations
+# Visualizations
 #fig =pyplot.figure(figsize=(30,30))
 #colormap = colors.ListedColormap(["darkblue","lightgreen","Red","yellow"])
 #im=pyplot.imshow(grid1,colormap, animated=True)
@@ -128,7 +297,4 @@ while start_idx!=goal:
 #pyplot.legend(loc="upper center",bbox_to_anchor=(0.5, 1.15), handles=[red_patch,green_patch,blue_patch,yellow_patch])
 
 # create movie array which captures all of the changes in the agent, and shwo the movie from the code in pygameimp.py
-#pyplot.show()
-
-
-
+# pyplot.show()
