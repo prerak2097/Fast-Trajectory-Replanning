@@ -42,10 +42,10 @@ class Maze:
         pass
 
     def __get_rand_pos(self):
-        pos =  (random.randint(len(self.maze)),random.randint(len(0, self.maze)))
+        pos =  (random.randint(0,len(self.maze)-1),random.randint(0,len(self.maze)-1))
+    
         while not self.__is_valid(pos):
-            pos = (random.randint(len(self.maze)),random.randint(len(0, self.maze)))
-
+            pos = (random.randint(0,len(self.maze)-1),random.randint(0,len(self.maze)-1))
         return pos
 
     def soving_given_pos(self, start, end):
@@ -86,9 +86,11 @@ class Maze:
             print('I cannot reach the target',curr.index)
 
     def solve_rand_pos(self):
-
         start = self.__get_rand_pos()
         end = self.__get_rand_pos()
+
+        print('Agent is at',start)
+        print('Target is at',end)
         state_grid = np.zeros((self.len,self.width), dtype=np.int64)
         # print_state(maze, "Maze: ")
         # start = (4, 4)
@@ -136,9 +138,11 @@ class Maze:
 
 
     def __is_valid(self, pos):
-        maze = self.grid
+        maze = self.maze
         if maze[pos[0]][pos[1]] == -1:
             return False
+        else:
+            return True
 
     def __get_path(self, start, goal) -> List:
         path = []
@@ -274,6 +278,8 @@ class Maze:
 #                  [-1, 0, 0, 0, -1, 0],
 #                  [-1, -1, 0, -1, -1, 0],
 #                  [0, 0, 0, -1, 0, 0]])
+
+
 #                 0  1  2  3  4  5  6  7  8  9  10
 maze1 = np.array([[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #0
                  [ 0, 0, 0, 0, 0,-1,-1,-1,-1, 0, 0], #1
@@ -290,7 +296,8 @@ maze1 = np.array([[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #0
 m1 = Maze(maze1)
 print(m1.str())
 
-m1.soving_given_pos((4,4),(10,10))
+# m1.soving_given_pos((4,4),(10,10))
+m1.solve_rand_pos()
 
 
 
