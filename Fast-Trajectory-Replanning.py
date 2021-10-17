@@ -41,21 +41,22 @@ maze1 = np.array([[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #0
 # maze1 = np.zeros((ROW,COL),dtype=np.int64)  
 state = []
 class Node:
-    def __init__(self, index, goal_index, hval, gval=0, parent=None) -> None:
+    def __init__(self, index, goal_index, hval, gval=0, parent=None, contant_c = 101 * 101) -> None:
         self.index = index
         self.goal_index = goal_index
         self.hval = hval
         self.gval = gval
         self.parent = parent
+        self.c = contant_c
+        
 
     def get_f(self):
         return self.gval + self.hval
     def __lt__(self, other):
         f_self = self.gval + self.hval
         f_other = other.gval + other.hval
-        c = ROW*COL
         if f_self == f_other:
-            return (c * f_self - self.gval) < (c * f_other - other.gval)
+            return (self.c * f_self - self.gval) < (self.c * f_other - other.gval)
         return f_self < f_other 
     def toStr(self):
         return ('index : {idx} | g {g} | h {h} | f {f}'.format(idx = self.index, h = self.hval, f = self.gval + self.hval ))
@@ -77,23 +78,20 @@ BACKWARD = "BACKWARD"
 ADATIVE = "ADATIVE"
 
 class Maze:
-    def __init__(self, maze = maze1, method = "FOWARD") -> None:
-        self.maze = maze
-        self.len = ROW
-        self.width = COL
-        self.grid=np.zeros((ROW,COL),dtype=np.int64)        #first grid we will test on
-        self.state = []
+    def __init__(self, maze = None, rows = 101, cols = 101) -> None:
+        self.maze = maze if maze is not None else Maze.generate_maze(rows, cols)
+        self.rows = len(maze) if maze is not None else rows
+        self.cols = len(maze[0]) if maze is not None else cols
+        self.record = []
         self.start = []
         self.end = []
         self.man_dist = lambda x, y: abs(x[0]-y[0])+abs(x[1]-y[1])
-        self.prev_h = 0
-        self.method = method
+        self.method = FORWARD
         
-    def generate_maze(self):
-        grid1 = np.zeros((ROW,COL),dtype=np.int64)
-        row = 0
-        col = 0
-        visited = np.zeros((ROW,COL),dtype=bool)        #boolean array of visited or not
+    def generate_maze(rows  = 101, cols = 101):
+        rand_maze = np.zeros((rows,cols),dtype=np.int64)
+        row, col = 0, 0
+        visited = np.zeros((rows,cols),dtype=np.int64)      #boolean array of visited or not
         stack_pairs = []
         stack_pairs.append([row,col])
 
@@ -103,14 +101,13 @@ class Maze:
             row = current[0]
             col = current[1]
 
-            if (self.is_valid(row,col,visited) == False):
+            if not Maze.is_valid(current, visited, rows, cols):
                 continue
 
-            visited[row][col] = True
+            visited[row][col] = -1
 
             #do the random make the cell blocked or unblocked here
-            temp = random.randint(0,100) / 100.0
-            grid1[row][col] = 0 if temp < 0.7 else -1
+            rand_maze[row][col] = 0 if random.randint(0,100) / 100.0 < 0.7 else -1
 
             #push all adjacent cells randomly
             neighbors = np.random.permutation(NEIGHBORS)
@@ -119,56 +116,45 @@ class Maze:
                 adj_vert = col + neighbors[i][1]
                 stack_pairs.append([adj_hor,adj_vert])
 
+        return rand_maze
 
-        # for i in range(len(grid1)):
-        #     for j in range(len(grid1)):
-        #         if j < (len(grid1)-1):
-        #             print(" %2d" % grid1[i][j], end="")
-        #         else:
-        #             print(" %2d" % grid1[i][j])
-        
-        self.maze = grid1
-
-
-    def is_valid(self,row, col,visited):                          #is row/col within the grid 
-        global ROW
-        global COL
+    def is_valid(pos, grid, rows, cols):                          
+        row = pos[0]
+        col = pos[1]
         #if cell is out of bounds
-        if (row < 0 or col < 0 or row>= ROW or col >= COL):
+        if (row < 0 or col < 0 or row>= rows or col >= cols):
             return False
-        #if the cell is visited return false
-        if visited[row][col]:
+    
+        if grid[row][col] == -1:
             return False
-        #return true otherwise
+        #return true otherwise.
         return True
 
-    def __get_rand_pos(self):
-        pos =  (random.randint(0,len(self.maze)-1),random.randint(0,len(self.maze)-1))
+    def get_rand_pos(self):
+        pos =  random.randint(0, self.rows - 1),random.randint(0,self.cols - 1)
     
-        while not self.__is_valid(pos):
-            pos = (random.randint(0,len(self.maze)-1),random.randint(0,len(self.maze)-1))
+        while not Maze.is_valid(pos, self.maze, self.rows, self.cols):
+            pos = random.randint(0, self.rows - 1),random.randint(0,self.cols - 1)
         return pos
 
     def a_star_fw(self, start = None, end = None):
         self.method = FORWARD
-        self.start = start if start is not None else self.__get_rand_pos()
-        self.end = end if end is not None else self.__get_rand_pos()
+        self.start = start if start is not None else self.get_rand_pos()
+        self.end = end if end is not None else self.get_rand_pos()
 
-        state_grid = np.zeros((self.len,self.width), dtype=np.int64)
+        state_grid = np.zeros((self.rows,self.cols), dtype=np.int64)
         goal = Node(self.end, self.end, hval=self.man_dist(self.end,self.end), gval=math.inf)
         curr = Node(self.start, self.end,hval= self.man_dist(self.start, self.end), gval=0)
         arrive = True
         counter = 0
         state = State(counter, curr.index)
         self.__observe(self.start, state_grid, self.maze, state)
-        self.state.append(state)
+        self.record.append(state)
 
         while curr.index != goal.index:
-            # print_state(state_grid, counter)
-            
             counter += 1
-            state = State(counter, curr.index, expand=self.state[counter-1].expand_count)
-            self.state.append(state)
+            state = State(counter, curr.index, expand=self.record[counter-1].expand_count)
+            self.record.append(state)
             curr.gval = 0
             state_grid[curr.index[0]][curr.index[1]] = counter
             goal.gval = math.inf
@@ -185,44 +171,35 @@ class Maze:
                 curr.index = self.__move_to(curr.index, goal.index, path, state_grid, self.maze, state)
                 # print('agent current position:', curr.index)
 
-        if arrive:
-            # print('Agent arrived!!')
-            pass
-        else:
-            # print('I cannot reach the target',curr.index)
+        if not arrive:
             state.dead = True
-        return self.state
 
-    def solving_adative(self,start = None,end = None):
+        return self.record
+
+    def solving_adative(self, start = None, end = None):
         self.method = ADATIVE
-        self.start = start if start is not None else self.__get_rand_pos()
-        self.end = end if end is not None else self.__get_rand_pos()
-        state_grid = np.zeros((self.len,self.width), dtype=np.int64)
-        history = np.zeros((self.len,self.width), dtype=np.int64)
+        self.start = start if start is not None else self.get_rand_pos()
+        self.end = end if end is not None else self.get_rand_pos()
+        state_grid = np.zeros((self.rows,self.cols), dtype=np.int64)
+        history = np.zeros((self.rows,self.cols), dtype=np.int64)
         goal = Node(self.end, end, hval=self.man_dist(self.end,self.end), gval=math.inf)
         curr = Node(self.start, end,hval= self.man_dist(self.start, self.end), gval=0)
         arrive = True
         counter = 0
         state = State(counter, curr.index)
         self.__observe(self.start, state_grid, self.maze, state)
-        self.state.append(state)
+        self.record.append(state)
 
 
-        # grid = self.maze
-        # for i in range(len(grid)):
-        #     for j in range(len(grid)):
-        #         if j < (len(grid)-1):
-        #             print(" %2d" % grid[i][j], end="")
-        #         else:
-        #             print(" %2d" % grid[i][j])
+
 
 
         while curr.index != goal.index:
             # print_state(state_grid, counter)
             
             counter += 1
-            state = State(counter, curr.index, expand=self.state[counter-1].expand_count)
-            self.state.append(state)
+            state = State(counter, curr.index, expand=self.record[counter-1].expand_count)
+            self.record.append(state)
             curr.gval = 0
             if counter > 1:
                 curr.hval = history[curr.index[0]][curr.index[1]]
@@ -248,28 +225,28 @@ class Maze:
         else:
             print('I cannot reach the target',curr.index)
 
-        return self.state
+        return self.record
     
     def a_star_bw(self, start = None, end = None):
         self.method = BACKWARD
-        self.start = start if start is not None else self.__get_rand_pos()
-        self.end = end if end is not None else self.__get_rand_pos()
+        self.start = start if start is not None else self.get_rand_pos()
+        self.end = end if end is not None else self.get_rand_pos()
 
-        state_grid = np.zeros((self.len,self.width), dtype=np.int64)
+        state_grid = np.zeros((self.rows,self.cols), dtype=np.int64)
         goal = Node(self.end, self.end, hval=self.man_dist(self.end,self.end), gval=math.inf)
         curr = Node(self.start, self.end,hval= self.man_dist(self.start, self.end), gval=0)
         arrive = True
         counter = 0
         state = State(counter, curr.index, )
         self.__observe(self.start, state_grid, self.maze, state)
-        self.state.append(state)
+        self.record.append(state)
 
         while curr.index != goal.index:
             # print_state(state_grid, counter)
             
             counter += 1
-            state = State(counter, curr.index, expand=self.state[counter-1].expand_count)
-            self.state.append(state)
+            state = State(counter, curr.index, expand=self.record[counter-1].expand_count)
+            self.record.append(state)
             curr.gval = math.inf
             state_grid[curr.index[0]][curr.index[1]] = counter
             goal.gval = 0
@@ -278,7 +255,6 @@ class Maze:
             # MUST COMPUTE THINGS HERE
             heap.heappush(openlist, goal)
             path = self.__compute_path(state_grid, goal, curr, openlist, counter, state)
-            path.reverse()
             # for p in path:
             #     print('->({x},{y})'.format(x=p[0], y=p[1]), end="")
     
@@ -287,6 +263,7 @@ class Maze:
                 arrive = False
                 break
             else:
+                path.reverse()
                 state.assume_path = path
                 state.assume_path.insert(0,curr.index)
                 curr.index = self.__move_to(curr.index, goal.index, path, state_grid, self.maze, state)
@@ -294,18 +271,11 @@ class Maze:
 
         if arrive:
             print('Agent arrived!!')
-            return self.state
+            return self.record
         else:
             print('I cannot reach the target',curr.index)
             state.dead = True
-            return self.state
-
-    def __is_valid(self, pos):
-        maze = self.maze
-        if maze[pos[0]][pos[1]] == -1:
-            return False
-        else:
-            return True
+            return self.record
 
     def __get_path(self, start, goal) -> List:
         path = []
@@ -413,9 +383,6 @@ class Maze:
         while len(openlist) > 0 and goal_node.gval > openlist[0].get_f():
             count += 1
             curr = heap.heappop(openlist)
-            self.__print_node(curr)
-            print("------------",end="")
-            self.__print_node(goal_node)
             list.append(curr)
             state.expand_count += 1
             actions = self.__get_next(curr.index, known_grid, goal_node.index, counter, history)
@@ -438,43 +405,26 @@ class Maze:
 
                     if next_node in openlist:
                         openlist.remove(next_node)
-                    # print("push  ",end = "")
-                    # print_node(next_node)
+
                     heap.heappush(openlist, next_node)
-                    # print("top    ",end = "")
-                # print
+
 
         if len(openlist) == 0:
             return None
-        print("after while loop    ", end="")
-        # goal_node = next_node
-        print('Goal node update',end="")
-        self.__print_node(goal_node)
 
 
-        # print_node(openlist[0])
+
         goal_node.parent = curr
         curr = goal_node
         path = self.__get_path(start_node, curr)
         g_goal = len(path) - 1
         
-        print('g_goal',g_goal)
 
         for node in list:
             row = node.index[0]
             col = node.index[1]
             history[row][col] = g_goal - node.gval
-            self.__print_node(node)
-    
 
-        for i in range(5):
-            for j in range(5):
-                print("%2d"%history[i][j],end = "")
-            print()
-
-        # for p in path:
-        #     print('->({x},{y})'.format(x=p[0], y=p[1]), end="")
-        # print()
         return path
         
     def __get_next(self, pos, grid, goal_idx, counter, history = []):
@@ -512,8 +462,14 @@ class Maze:
         print('index : {idx} | g {g} | h {h} | f {f}'.format(
         idx=node.index, g=node.gval, h=node.hval, f=node.gval + node.hval))
 
-
-
+    def print_maze(self):
+        grid = self.maze
+        for i in range(len(grid)):
+            for j in range(len(grid)):
+                if j < (len(grid)-1):
+                    print(" %2d" % grid[i][j], end="")
+                else:
+                    print(" %2d" % grid[i][j])
 # ----------------------------------------------------------------
 
     #boolean array of visited or not
@@ -712,9 +668,27 @@ class App:
 # App()
 
 
+
+
+rand_m = Maze.generate_maze(15,15)
+
+
+ROW, COL = 15, 15
+
+m2 = Maze(rand_m)
+m2.print_maze()
+start = m2.get_rand_pos()
+end = m2.get_rand_pos()
+
+# m2.solving_adative(start, end)
+# m2.a_star_bw(start, end)
+m2.a_star_fw(start, end)
+print(f"Start: {start} End:{end}")
+
+
 # known_world = np.zeros((ROW,COL), dtype=np.int64)
-# count = 0
-# for st in m1.state:
+count = 0
+# for st in m2.record:
 #     for pos in st.known_world_update:
 #         known_world[pos[0]][pos[1]] = -1
 #     count+=1
@@ -722,6 +696,34 @@ class App:
 #     print('Expanded Cell count',st.expand_count)
 #     grid_str(known_world)
 #     print()
+
+known_world = np.zeros((ROW,COL), dtype=np.int64)
+for st in m2.a_star_fw(start, end):
+    for pos in st.known_world_update:
+        known_world[pos[0]][pos[1]] = -1
+st = m2.record.pop()
+print('Agent: {x}\nAssume:{y}\nActual:{k}\nAfter move:{z}'.format(x=st.prev, y=st.assume_path, z=st.after, k=st.actual_move))
+print('Forward : Expanded Cell count',st.expand_count)
+grid_str(known_world)
+
+known_world = np.zeros((ROW,COL), dtype=np.int64)
+for st in m2.a_star_bw(start, end):
+    for pos in st.known_world_update:
+        known_world[pos[0]][pos[1]] = -1
+st = m2.record.pop()
+print('Agent: {x}\nAssume:{y}\nActual:{k}\nAfter move:{z}'.format(x=st.prev, y=st.assume_path, z=st.after, k=st.actual_move))
+print('Backward: Expanded Cell count',st.expand_count)
+grid_str(known_world)
+
+known_world = np.zeros((ROW,COL), dtype=np.int64)
+for st in m2.solving_adative(start, end):
+    for pos in st.known_world_update:
+        known_world[pos[0]][pos[1]] = -1
+st = m2.record.pop()
+print('Agent: {x}\nAssume:{y}\nActual:{k}\nAfter move:{z}'.format(x=st.prev, y=st.assume_path, z=st.after, k=st.actual_move))
+print('Adative : Expanded Cell count',st.expand_count)
+grid_str(known_world)
+
 
 
 
