@@ -1,0 +1,108 @@
+\documentclass[12pt]{article}
+\usepackage{MnSymbol}
+\usepackage{wasysym}
+\usepackage{amsmath}
+\usepackage[top=1in, bottom=1in, left=0.8in, right=1in]{geometry}
+\usepackage{multicol}
+\usepackage{wrapfig}
+\usepackage{listings}
+\usepackage{enumerate}
+\usepackage{comment}
+\usepackage{tikz}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[ruled,vlined]{algorithm2e}
+\lstset{language=Java, basicstyle={\small\ttfamily}, columns=flexible, belowskip=0mm}
+\setlength{\columnsep}{0.1pc}
+\graphicspath{ {\string~/Desktop/21 Fall/Algorithm/homework1} }
+
+\begin{document}
+
+\noindent
+CS 440 \hfill \textbf{Homework 1} \newline 
+{Fall 2021} \hfill \textbf{Due:} October 22, 2021, 11:55 p.m.
+
+\noindent
+\rule{\linewidth}{0.4pt}
+
+\vspace{.5cm}
+
+\textbf{Name}: ({\color{blue}Amber Ku, Prerak Patel, Zining Ou})~~~~~\textbf{NetID}: ({\color{blue} ?, ?, zo19})
+
+\vspace{.5cm}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Parts:
+
+\begin{enumerate}
+
+  % Part 1
+  \item \textbf{Understanding the methods [10 points]:} Read the chapter in your textbook on uninformed and informed (heuristic) search and then read the project description again. Make sure that you understand A* and the concepts of admissible and consistent h-values.
+  \begin{enumerate}
+  	\item Explain in your report why the first move of the agent for the example search problem from Figure 8 is to the east rather than the north given that the agent does not know initially which cells are blocked. \\
+	
+	{\color{blue}Answer: 
+	Given that the agent does not know initially which cells are blocked, if the agent moves to the east for the first step, then there is only 1 step further to get to the target, which is shorter than the distance if the agent moves to the north for the first step (4 steps further).
+	$\blacksquare$
+	\\
+	}
+
+	\item This project argues that the agent is guaranteed to reach the target if it is not separated from it by blocked cells. Give a convincing argument that the agent in finite gridworlds indeed either reaches the target or discovers that this is impossible in finite time. Prove that the number of moves of the agent until it reaches the target or discovers that this is impossible is bounded from above by the number of unblocked cells squared.\\
+		
+	{\color{blue}Answer: 
+	Assume that the agent is in a finite gridworld.
+	
+	
+		b\\
+	}
+	
+  \end{enumerate}
+
+  % Part 2
+  \item \textbf{The Effects of Ties [15 points]:} Repeated Forward A* needs to break ties to decide which cell to expand next if several cells have the same smallest f-value. It can either break ties in favor of cells with smaller g-values or in favor of cells with larger g-values. Implement and compare both versions of Repeated Forward A* with respect to their runtime or, equivalently, number of expanded cells. Explain your observations in detail, that is, explain what you observed and give a reason for the observation.
+  
+   [\textbf{Hint:} For the implementation part, priorities can be integers rather than pairs of integers. For example, you can use $c \cdot f(s)-g(s)$  as priorities to break ties in favor of cells with larger $g$-values, where $c$ is a constant larger than the largest $g$-value of any generated cell. For the explanation part, consider which cells both versions of Repeated Forward A* expand for the example search problem from Figure 9.]
+    
+    {\color{blue}Answer: 
+        \\
+    }
+
+  % Part 3
+  \item \textbf{Forward vs. Backward [20 points]:} Implement and compare Repeated Forward A* and Repeated Backward A* with respect to their runtime or, equivalently, number of expanded cells. Explain your observations in detail, that is, explain what you observed and give a reason for the observation. Both versions of Repeated A* should break ties among cells with the same f-value in favor of cells with larger g-values and remaining ties in an identical way, for example randomly.]
+  
+    
+  {\color{blue}Answer: 
+  	\\
+  }
+  
+  % Part 4
+  \item \textbf{Heuristics in the Adaptive A* [20 points]:} The project argues that “the Manhattan distances are consistent in gridworlds in which the agent can move only in the four main compass directions.” Prove that this is indeed the case.
+Furthermore, it is argued that “The h-values hnew(s) ... are not only admissible but also consistent.” Prove that Adaptive A* leaves initially consistent h-values consistent even if action costs can increase.
+  
+  {\color{blue}Answer: 
+  The Manhattan distance in the Adaptive A* search refers to the Manhattan distance from the current state of the agent from the target state. Since the target state is still and each state stays at the same position, so the distance from each state to the target state remains the same all along the way. 
+  $\blacksquare$\\
+   }
+     
+
+  % Part 5  
+  \item \textbf{Heuristics in the Adaptive A* [15 points]:} Implement and compare Repeated Forward A* and Adaptive A* with respect to their runtime. Explain your observations in detail, that is, explain what you observed and give a reason for the observation. Both search algorithms should break ties among cells with the same f-value in favor of cells with larger g-values and remaining ties in an identical way, for example randomly.
+
+    
+   {\color{blue}Answer: 
+    }
+
+  
+  
+  % Part 6
+  \item \textbf{Statistical Significance [10 points]:} Performance differences between two search algorithms can be systematic in nature or only due to sampling noise (= bias exhibited by the selected test cases since the number of test cases is always limited). One can use statistical hypothesis tests to determine whether they are systematic in nature. Read up on statistical hypothesis tests (for example, in Cohen, Empirical Methods for Artificial Intelligence, MIT Press, 1995) and then describe for one of the experimental questions above exactly how a statistical hypothesis test could be performed. You do not need to implement anything for this question, you should only precisely describe how such a test could be performed.
+    
+  {\color{blue}Answer: 
+  }
+  
+
+
+\end{enumerate}
+
+\end{document}
